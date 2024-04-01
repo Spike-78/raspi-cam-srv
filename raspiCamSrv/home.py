@@ -891,6 +891,45 @@ def take_photo():
             if sc.error2:
                 flash(sc.error2)
     return render_template("home/index.html", cc=cc, sc=sc, cp=cp)        
+        
+        
+# add for Remote Trigger: take HQ Picture - nok 2024-04-01
+@bp.route("/take_photo_trigger", methods=("GET", "POST"))
+# @login_required
+def take_photo_trigger():
+    logger.debug("In take_photo_trigger")
+    g.hostname = request.host
+    g.version = version
+    cfg = CameraCfg()
+    cc = cfg.controls
+    sc = cfg.serverConfig
+    cp = cfg.cameraProperties
+    filename =""
+    filename = request.args.get("File")
+    if request.method == "GET":
+        timeImg = datetime.datetime.now()
+        if not filename:
+            filename = timeImg.strftime("%Y%m%d_%H%M%S") + "." + sc.photoType
+        logger.debug("Saving image %s", filename)
+        fp = Camera().takeImage(filename)
+        if not sc.error:
+            logger.debug("take_photo - success")
+            logger.debug("take_photo - sc.displayContent: %s", sc.displayContent)
+            if sc.displayContent == "hist":
+                logger.debug("take_photo - sc.displayHistogram: %s", sc.displayHistogram)
+                if sc.displayHistogram is None:
+                    logger.debug("take_photo - sc.displayPhoto: %s", sc.displayPhoto)
+                    if sc.displayPhoto:
+                        generateHistogram(sc)
+            msg="Image saved as " + fp
+            flash(msg)
+        else:
+            msg = "Error in " + sc.errorSource + ": " + sc.error
+            flash(msg)
+            if sc.error2:
+                flash(sc.error2)
+    return Response('OK - File: '+ filename)
+
 
 @bp.route("/take_raw_photo", methods=("GET", "POST"))
 @login_required
